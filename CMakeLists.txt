@@ -35,7 +35,7 @@ pico_sdk_init()
 
 # Add executable. Default name is the project name, version 0.1
 
-add_executable(spindle-firmware spindle-firmware.c )
+add_executable(spindle-firmware spindle-firmware.c eink-driver.c)
 
 pico_set_program_name(spindle-firmware "spindle-firmware")
 pico_set_program_version(spindle-firmware "0.1")

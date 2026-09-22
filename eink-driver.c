@@ -1,5 +1,6 @@
 #include "hardware/spi.h"
 #include "pico/stdlib.h"
+#include <stdint.h>
 
 #define SPI_PORT spi0
 
@@ -21,14 +22,15 @@ int eink_init(){
     spi_init(spi0, 1000000); // 1 MHz init
     gpio_set_function(PIN_MISO, GPIO_FUNC_SPI);
     gpio_set_function(PIN_MOSI, GPIO_FUNC_SPI);
-    gpio_set_function(PIN_CS, GPIO_OUT);
     gpio_set_function(PIN_SCK, GPIO_FUNC_SPI);
 
+    gpio_set_function(PIN_CS, GPIO_OUT);
     gpio_init(PIN_CS);
     gpio_put(PIN_CS, 1);
 
     gpio_init(PIN_DC);
     gpio_set_function(PIN_DC, GPIO_OUT);
+    gpio_put(PIN_DC, 1);
 
     gpio_init(PIN_RSTN);
     gpio_set_function(PIN_RSTN, GPIO_OUT);
@@ -43,6 +45,22 @@ int eink_init(){
     sleep_ms(5);
     gpio_put(PIN_RSTN, 1);
 
-    
 
+    //software reset
+    gpio_put(PIN_DC, 0);
+    gpio_put(PIN_CS, 0);
+
+    uint8_t cmd = 0x12;
+    spi_write_blocking(SPI_PORT, &cmd, 1);
+    gpio_put(PIN_CS, 1);
+    while(gpio_get(PIN_BUSY)){
+        sleep_ms(1);
+    }
+
+    // 10ms sleep
+    sleep_ms(10);
+
+
+    
+    
 }
