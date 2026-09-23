@@ -209,7 +209,30 @@ int write_data_and_display(uint8_t imagearray[], size_t array_size){
 
     eink_softstart();
 
-    //writing more stuff soon
+    //driving panel
+    
+    // display control update:
+    gpio_put(PIN_DC, 0);
+    gpio_put(PIN_CS, 0);
+    uint8_t update_display_panel[] = {0x22, 0xc7};
+    spi_write_blocking(SPI_PORT, &update_display_panel[0], 1);
+    gpio_put(PIN_DC, 1);
+    spi_write_blocking(SPI_PORT, &update_display_panel[1], 1);
+    gpio_put(PIN_CS, 1);
+    
+
+    gpio_put(PIN_DC, 0);
+    gpio_put(PIN_CS, 0);
+    uint8_t master_activation = 0x20;
+    spi_write_blocking(SPI_PORT, &master_activation, 1);
+    gpio_put(PIN_CS, 1);
+    gpio_put(PIN_DC, 1);
+
+    while (gpio_get(PIN_BUSY)){
+        sleep_ms(10);
+    }
+
+    return 0;
     
 
 }
@@ -228,3 +251,14 @@ int eink_softstart(){
     return 0;
 }
 
+int eink_sleep(){
+
+    uint8_t deep_sleep[] = {0x10, 0x01};
+    gpio_put(PIN_DC, 0);
+    gpio_put(PIN_CS, 0);
+    spi_write_blocking(SPI_PORT, &deep_sleep[0], 1);
+    gpio_put(PIN_DC, 1);
+    spi_write_blocking(SPI_PORT, &deep_sleep[1], 1);
+    gpio_put(PIN_CS, 1);
+    
+}
