@@ -1,17 +1,12 @@
 #include "hardware/spi.h"
 #include "pico/stdlib.h"
+#include "eink-driver.h"
 #include <stdint.h>
 
-#define SPI_PORT spi0
+#define SPI_PORT spi1
 
 //add actual pin numbers here
-#define PIN_MISO 1
-#define PIN_MOSI 2
-#define PIN_CS 3
-#define PIN_SCK 4
-#define PIN_DC 5
-#define PIN_RSTN 6
-#define PIN_BUSY 7 // if BUSY = 1, pause sending commands, as the device is BUSY; if BUSY = 0, no interruption needed
+// if BUSY = 1, pause sending commands, as the device is BUSY; if BUSY = 0, no interruption needed
 
 // for all arrays, the first value is the command, and the following value(s) are the data values. 
 
@@ -176,7 +171,23 @@ int load_waveform_lut(){
     // completed
 }
 
-int write_data_and_display(uint8_t imagearray[], size_t array_size){
+
+int eink_softstart(){
+    uint8_t softstart[] = {0x0c, 0x8b, 0x9c, 0x96, 0x0f};
+
+    gpio_put(PIN_DC, 0);
+    gpio_put(PIN_CS, 0);
+    spi_write_blocking(SPI_PORT, &softstart[0], 1);
+    gpio_put(PIN_DC, 1);
+    spi_write_blocking(SPI_PORT, &softstart[1], 4);
+    gpio_put(PIN_DC, 0);
+    gpio_put(PIN_CS, 1);
+
+    return 0;
+}
+
+
+int eink_write_data_and_display(uint8_t imagearray[], size_t array_size){
     gpio_put(PIN_DC, 0);
     gpio_put(PIN_DC, 1);
 
@@ -237,19 +248,6 @@ int write_data_and_display(uint8_t imagearray[], size_t array_size){
 
 }
 
-int eink_softstart(){
-    uint8_t softstart[] = {0x0c, 0x8b, 0x9c, 0x96, 0x0f};
-
-    gpio_put(PIN_DC, 0);
-    gpio_put(PIN_CS, 0);
-    spi_write_blocking(SPI_PORT, &softstart[0], 1);
-    gpio_put(PIN_DC, 1);
-    spi_write_blocking(SPI_PORT, &softstart[1], 4);
-    gpio_put(PIN_DC, 0);
-    gpio_put(PIN_CS, 1);
-
-    return 0;
-}
 
 int eink_sleep(){
 
@@ -260,5 +258,5 @@ int eink_sleep(){
     gpio_put(PIN_DC, 1);
     spi_write_blocking(SPI_PORT, &deep_sleep[1], 1);
     gpio_put(PIN_CS, 1);
-    
+
 }
