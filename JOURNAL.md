@@ -7,3 +7,7 @@ I made a new file called eink-driver.c, as the initialisation and control driver
 
 
 added a header and a .c file for the eink driver, and wrote some basic code, check the commit for the code!!
+
+
+# sept 23 2026
+I wrote some more commands for the firmware, the temperature sensor setting commands, the LUT commands, and the RAM data loading commands!!

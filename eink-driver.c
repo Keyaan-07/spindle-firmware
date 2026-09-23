@@ -118,6 +118,113 @@ int eink_init(){
     gpio_put(PIN_CS, 1);
     sleep_ms(1);
 
-
+    return 0;
     //initialisation complete. 
 }
+
+
+int eink_ext_temp(){
+    gpio_put(PIN_DC, 0); 
+    gpio_put(PIN_CS, 0);
+    
+    uint8_t ext_ts_control [] = {0x18, 0x80};
+    spi_write_blocking(SPI_PORT, &ext_ts_control[0], 1);
+    gpio_put(PIN_DC, 1);
+    spi_write_blocking(SPI_PORT, &ext_ts_control[1], 1);
+    gpio_put(PIN_CS, 1);
+
+    return 0;
+}
+
+int eink_int_temp(){
+    gpio_put(PIN_DC, 0);
+    gpio_put(PIN_CS, 0);
+    uint8_t int_ts_control [] = {0x18, 0x48};
+    spi_write_blocking(SPI_PORT, &int_ts_control[0], 1);
+    gpio_put(PIN_DC, 1);
+    spi_write_blocking(SPI_PORT, &int_ts_control[1], 1);
+    gpio_put(PIN_CS, 1);
+
+    return 0;
+}
+
+int load_waveform_lut(){
+    gpio_put(PIN_DC, 0);
+    gpio_put(PIN_CS, 0); 
+
+    uint8_t temp_with_lut_mode1 [] = {0x22, 0xB1}; // MODE 1 is slow/full refresh 
+    spi_write_blocking(SPI_PORT, &temp_with_lut_mode1[0], 1);
+    gpio_put(PIN_DC, 1);
+    spi_write_blocking(SPI_PORT, &temp_with_lut_mode1[1], 1);
+    gpio_put(PIN_CS, 1);
+    sleep_ms(1);
+
+    // LUT loaded, now 0x20, in the same command
+
+    gpio_put(PIN_DC, 0); 
+    gpio_put(PIN_CS, 0);
+    uint8_t master_activation = 0x20;
+    spi_write_blocking(SPI_PORT, &master_activation, 1);
+    gpio_put(PIN_DC, 1);
+    gpio_put(PIN_CS, 1);
+
+    while (gpio_get(PIN_BUSY)){
+        sleep_ms(1);
+    }
+
+    return 0;
+    // completed
+}
+
+int write_data_and_display(uint8_t imagearray[], size_t array_size){
+    gpio_put(PIN_DC, 0);
+    gpio_put(PIN_DC, 1);
+
+    uint8_t ram_x_addr_counter [] = {0x4e, 0x00};
+    spi_write_blocking(SPI_PORT, &ram_x_addr_counter[0], 1);
+    gpio_put(PIN_DC, 1);
+    spi_write_blocking(SPI_PORT, &ram_x_addr_counter[1], 1);
+    gpio_put(PIN_CS, 1);
+
+    uint8_t ram_y_addr_counter [] = {0x4f, 0x00, 0x00};
+    gpio_put(PIN_DC, 0);
+    gpio_put(PIN_CS, 0);
+    spi_write_blocking(SPI_PORT, &ram_y_addr_counter[0], 1);
+    gpio_put(PIN_DC, 1);
+    spi_write_blocking(SPI_PORT, &ram_y_addr_counter[1], 2);
+    gpio_put(PIN_CS, 1);
+
+    gpio_put(PIN_DC, 0);
+    gpio_put(PIN_CS, 0);
+    uint8_t imagearraycommand = 0x24;
+    spi_write_blocking(SPI_PORT, &imagearraycommand, 1);
+    gpio_put(PIN_DC, 1);
+    spi_write_blocking(SPI_PORT, &imagearray[0], array_size);
+    gpio_put(PIN_DC, 0);
+    uint8_t nop = 0x7f;
+    spi_write_blocking(SPI_PORT, &nop, 1);
+    gpio_put(PIN_CS, 1);
+    gpio_put(PIN_DC, 1);
+    //writing data part done, now displaying it. 
+
+    eink_softstart();
+
+    //writing more stuff soon
+    
+
+}
+
+int eink_softstart(){
+    uint8_t softstart[] = {0x0c, 0x8b, 0x9c, 0x96, 0x0f};
+
+    gpio_put(PIN_DC, 0);
+    gpio_put(PIN_CS, 0);
+    spi_write_blocking(SPI_PORT, &softstart[0], 1);
+    gpio_put(PIN_DC, 1);
+    spi_write_blocking(SPI_PORT, &softstart[1], 4);
+    gpio_put(PIN_DC, 0);
+    gpio_put(PIN_CS, 1);
+
+    return 0;
+}
+
