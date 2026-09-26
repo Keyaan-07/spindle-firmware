@@ -10,6 +10,8 @@
 
 // for all arrays, the first value is the command, and the following value(s) are the data values. 
 
+// hi!! This is written by me(keyaan) in an attempt to run an e-ink off of custom drivers, and this is the first time i have written a driver, or being more clear, ANY driver, lol. There will be mistakes, and please mail them to me on me@keyaan.me. Also, if you are reading this, shoot me a DM on slack @Keyaan!!
+
 
 int eink_init(){
 
