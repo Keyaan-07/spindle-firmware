@@ -33,9 +33,11 @@ project(spindle-firmware C CXX ASM)
 # Initialise the Raspberry Pi Pico SDK
 pico_sdk_init()
 
+add_subdirectory("no-OS-FatFS-SD-SPI-RPi-Pico/FatFS_SPI")
+
 # Add executable. Default name is the project name, version 0.1
 
-add_executable(spindle-firmware spindle-firmware.c eink-driver.c)
+add_executable(spindle-firmware spindle-firmware.c eink-driver.c hw_config.c)
 
 pico_set_program_name(spindle-firmware "spindle-firmware")
 pico_set_program_version(spindle-firmware "0.1")
@@ -51,11 +53,15 @@ target_link_libraries(spindle-firmware
 # Add the standard include files to the build
 target_include_directories(spindle-firmware PRIVATE
         ${CMAKE_CURRENT_LIST_DIR}
+        ${CMAKE_CURRENT_LIST_DIR}/no-OS-FatFS-SD-SPI-RPi-Pico/FatFs_SPI
+        ${CMAKE_CURRENT_LIST_DIR}/no-OS-FatFS-SD-SPI-RPi-Pico/FatFs_SPI/include
 )
 
 # Add any user requested libraries
 target_link_libraries(spindle-firmware 
         hardware_spi
+        hardware_rtc
+        FatFs_SPI
         )
 
 pico_add_extra_outputs(spindle-firmware)
