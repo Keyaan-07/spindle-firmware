@@ -6,9 +6,8 @@
 #include "ff.h"
 #include "font8x8_basic.h"
 
-// SPI Defines
+
 // We are going to use SPI 0, and allocate it to the following GPIO pins
-// Pins can be changed, see the GPIO function select table in the datasheet for information on GPIO assignments
 #define SPI_PORT spi1
 #define PIN_UP 0
 #define PIN_DOWN 0

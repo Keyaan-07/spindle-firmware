@@ -5,7 +5,7 @@
 #include "hardware/spi.h"
 #include <stdint.h>
 
-#define PIN_MISO 1
+#define PIN_MISO 15
 #define PIN_MOSI 11
 #define PIN_CS 9
 #define PIN_SCK 10
