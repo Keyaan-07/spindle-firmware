@@ -11,3 +11,7 @@ added a header and a .c file for the eink driver, and wrote some basic code, che
 
 # sept 23 2026
 I wrote some more commands for the firmware, the temperature sensor setting commands, the LUT commands, and the RAM data loading commands!!
+
+
+# sept 27 2026
+I am not maintaining this journal anymore because i wrote software, and not hardware. Thank you.

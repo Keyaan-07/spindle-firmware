@@ -16,11 +16,13 @@
 #define PIN_LEFT 0
 #define PIN_CENTER 0
 
-#define MAX_FILENAME_LENGTH 32
-#define MAX_FILES 16
+#define MAX_FILENAME_LENGTH 16
+#define MAX_FILES 32
 char file_list[MAX_FILENAME_LENGTH][MAX_FILES];
 int total_files = 0;
 int selected_file = 0;
+int ui_state = 0;
+
 
 FILINFO fno;
 FRESULT read;
@@ -39,11 +41,11 @@ void scan_directory(char* path){
         if (total_files>=MAX_FILES){
             break;
         }
-        if (fno.fattrib && AM_DIR) {
+        if (fno.fattrib & AM_DIR) {
             continue;
         }
 
-        strncpy(file_list[total_files], fno.fdate, MAX_FILENAME_LENGTH);
+        strncpy(file_list[total_files], fno.fname, MAX_FILENAME_LENGTH);
         total_files++;
     }
     f_closedir(&opened_directory);
@@ -53,9 +55,44 @@ void scan_directory(char* path){
 void draw_menu(){
     eink_clear();
     int y_cursor = 10;
-    for (int i = 0; i<=total_files;i++){
-        
+    for (int i = 0; i<total_files;i++){
+        if (selected_file == i){
+            eink_draw_char(2, y_cursor, '>', 1);
+        }
+        eink_write_string(16, y_cursor, file_list[i], 1);
+        y_cursor += 12;
+
     }
+    eink_write_data_and_display();
+}
+
+void read_book(char* filename){
+    FIL file;
+    FRESULT res;
+    UINT bytes_read;
+    char char_buf;
+
+    eink_clear();
+
+    res = f_open(&file, filename, FA_READ);
+    int y_cursor = 10;
+    int x_cursor = 2;
+    // 176 is the width of the screen
+    while (y_cursor<176){
+        f_read(&file, &char_buf, 1, &bytes_read);
+        if (bytes_read == 0) break;
+
+        if (char_buf == '\n'){
+            x_cursor = 2;
+            y_cursor += 12;
+            continue;
+        }
+        eink_draw_char(x_cursor, y_cursor, char_buf, 1);
+        x_cursor += 8;
+    }
+
+    eink_write_data_and_display();
+    f_close(&file);
 }
 
 
@@ -67,24 +104,54 @@ int main()
     gpio_init(PIN_DOWN);
     gpio_init(PIN_RIGHT);
     gpio_init(PIN_LEFT);
+    gpio_init(PIN_CENTER);
     gpio_set_dir(PIN_LEFT, GPIO_IN);
     gpio_set_dir(PIN_RIGHT, GPIO_IN);
     gpio_set_dir(PIN_DOWN, GPIO_IN);
     gpio_set_dir(PIN_UP, GPIO_IN);
+    gpio_set_dir(PIN_CENTER, GPIO_IN);
 
 
     stdio_init_all();
     eink_init();
     eink_clear();
+    eink_write_data_and_display();
 
     f_mount(&fs, "0:", 1);
-    
+    scan_directory("0:");
 
-    eink_write_data_and_display();
-    f_closedir(&open_dir);
-
+    draw_menu();
 
     while(1){
-         sleep_ms(1000);
+        if(ui_state == 0){
+            if(gpio_get(PIN_CENTER)==0){
+                read_book(file_list[selected_file]);
+                ui_state =1;
+                sleep_ms(200);
+            
+            }
+
+            if(gpio_get(PIN_DOWN) == 0){
+                if (selected_file < (total_files-1)){
+                    selected_file++;
+                    draw_menu();
+                }
+                sleep_ms(100);
+            }
+            if (gpio_get(PIN_UP) == 0){
+                if(selected_file>0){
+                    selected_file--;
+                    draw_menu();
+                }
+                sleep_ms(100);
+            }
+        }
+        else if (ui_state == 1){
+            if(gpio_get(PIN_LEFT)==0){
+                ui_state = 0;
+                draw_menu();
+                sleep_ms(10);
+            }
+        }
     }
 }
