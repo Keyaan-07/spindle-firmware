@@ -15,13 +15,19 @@
 #define PIN_RIGHT 0
 #define PIN_LEFT 0
 #define PIN_CENTER 0
+#define MAX_PAGES 500
 
-#define MAX_FILENAME_LENGTH 16
-#define MAX_FILES 32
+#define MAX_FILENAME_LENGTH 32
+#define MAX_FILES 16
 char file_list[MAX_FILENAME_LENGTH][MAX_FILES];
 int total_files = 0;
 int selected_file = 0;
 int ui_state = 0;
+int current_off = 0;
+int next_off = 0;
+
+UINT page_history[MAX_PAGES];
+int current_page = 0;
 
 
 FILINFO fno;
@@ -75,12 +81,18 @@ void read_book(char* filename){
     eink_clear();
 
     res = f_open(&file, filename, FA_READ);
+    f_lseek(&file, current_off);
+
     int y_cursor = 10;
     int x_cursor = 2;
+    UINT total_bytes_tis_page = 0;
+
+
     // 176 is the width of the screen
     while (y_cursor<176){
         f_read(&file, &char_buf, 1, &bytes_read);
         if (bytes_read == 0) break;
+        total_bytes_tis_page++;
 
         if (char_buf == '\n'){
             x_cursor = 2;
@@ -89,8 +101,15 @@ void read_book(char* filename){
         }
         eink_draw_char(x_cursor, y_cursor, char_buf, 1);
         x_cursor += 8;
+
+        if (x_cursor>256){
+            x_cursor = 2;
+            y_cursor += 12;
+        }
     }
 
+
+    next_off = current_off + total_bytes_tis_page;
     eink_write_data_and_display();
     f_close(&file);
 }
@@ -125,8 +144,12 @@ int main()
     while(1){
         if(ui_state == 0){
             if(gpio_get(PIN_CENTER)==0){
-                read_book(file_list[selected_file]);
+                current_off = 0;
+                page_history[0] = 0;
+                current_page = 0;
                 ui_state =1;
+
+                read_book(file_list[selected_file]);
                 sleep_ms(200);
             
             }
@@ -150,8 +173,30 @@ int main()
             if(gpio_get(PIN_LEFT)==0){
                 ui_state = 0;
                 draw_menu();
-                sleep_ms(10);
+                sleep_ms(100);
+            }
+
+            if(gpio_get(PIN_DOWN)==0){
+
+                if (current_page < (MAX_PAGES - 1)){
+                    current_page++;
+                    page_history[current_page] = next_off;
+                    current_off = next_off;
+                    read_book(file_list[selected_file]);
+                }
+                sleep_ms(100);
+            }
+
+            if(gpio_get(PIN_UP) == 0){
+
+                if (current_page>0){
+                    current_page--;
+                    current_off = page_history[current_page];
+                    read_book(file_list[selected_file]);
+                }
+                sleep_ms(100);
             }
         }
+        sleep_ms(10);
     }
 }
