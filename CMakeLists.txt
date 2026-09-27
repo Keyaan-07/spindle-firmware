@@ -60,7 +60,6 @@ target_include_directories(spindle-firmware PRIVATE
 # Add any user requested libraries
 target_link_libraries(spindle-firmware 
         hardware_spi
-        hardware_rtc
         FatFs_SPI
         )
 
