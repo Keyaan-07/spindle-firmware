@@ -14,11 +14,17 @@
 #define PIN_BUSY 13 
 
 int eink_init();
+void eink_clear();
 int eink_ext_temp();
 int eink_int_temp();
 int load_waveform_lut();
-int eink_write_data_and_display(uint8_t imagearray[], size_t array_size);
+int eink_write_data_and_display();
 int eink_softstart();
 int eink_sleep();
+
+void eink_draw_pixel(int x, int y, int colour);
+void eink_draw_char(int x, int y, char c, int colour);
+void eink_write_string(int x, int y, const char* str, int colour);
+
 
 #endif

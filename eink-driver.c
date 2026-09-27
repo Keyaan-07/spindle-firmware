@@ -2,8 +2,11 @@
 #include "pico/stdlib.h"
 #include "eink-driver.h"
 #include <stdint.h>
+#include "font8x8_basic.h"
 
 #define SPI_PORT spi1
+
+image_array[5808] = {};
 
 //add actual pin numbers here
 // if BUSY = 1, pause sending commands, as the device is BUSY; if BUSY = 0, no interruption needed
@@ -55,6 +58,7 @@ int eink_init(){
     while(gpio_get(PIN_BUSY)){
         sleep_ms(1);
     }
+
 
 
     // 10ms sleep
@@ -119,6 +123,9 @@ int eink_init(){
     //initialisation complete. 
 }
 
+void eink_clear(){
+    memset(image_array, 0xff, 5808);
+}
 
 int eink_ext_temp(){
     gpio_put(PIN_DC, 0); 
@@ -189,7 +196,7 @@ int eink_softstart(){
 }
 
 
-int eink_write_data_and_display(uint8_t imagearray[], size_t array_size){
+int eink_write_data_and_display(){
     gpio_put(PIN_DC, 0);
     gpio_put(PIN_DC, 1);
 
@@ -212,7 +219,7 @@ int eink_write_data_and_display(uint8_t imagearray[], size_t array_size){
     uint8_t imagearraycommand = 0x24;
     spi_write_blocking(SPI_PORT, &imagearraycommand, 1);
     gpio_put(PIN_DC, 1);
-    spi_write_blocking(SPI_PORT, &imagearray[0], array_size);
+    spi_write_blocking(SPI_PORT, image_array[0], 5808);
     gpio_put(PIN_DC, 0);
     uint8_t nop = 0x7f;
     spi_write_blocking(SPI_PORT, &nop, 1);
@@ -246,8 +253,6 @@ int eink_write_data_and_display(uint8_t imagearray[], size_t array_size){
     }
 
     return 0;
-    
-
 }
 
 
@@ -260,5 +265,45 @@ int eink_sleep(){
     gpio_put(PIN_DC, 1);
     spi_write_blocking(SPI_PORT, &deep_sleep[1], 1);
     gpio_put(PIN_CS, 1);
+
+}
+
+void eink_draw_pixel(int x, int y, int colour){
+    if(x<0 || x>=264 || y<0 || y>=176){
+        return;
+    }
+
+    int byte_index = (y*33) + (x/8);
+    int bit_shift = 7-(x%8);
+
+    if (colour == 0){
+        image_array[byte_index] = image_array[byte_index]&&(~(1 << bit_shift));
+    }
+    else {
+        image_array[byte_index] = image_array[byte_index]||(~(1 << bit_shift));
+    }
+}
+
+
+void eink_draw_char(int x, int y, char c, int colour){
+    for(int row=0; row<8; row++){
+        uint8_t row_byte = font8x8_basic[(int)c][row];
+
+        for(int col = 0; col<8 ;col++){
+            if (row_byte & (1-col)){
+                eink_draw_pixel(x+col, y+row, colour);
+            }
+        }
+    }
+
+}
+
+void eink_write_string(int x, int y, const char* str, int colour){
+    int i=0;
+    while(str[i]!=0){
+        eink_draw_char(x, y, str[i], colour);
+        x += 8;
+        i++;
+    }
 
 }
