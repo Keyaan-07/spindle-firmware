@@ -23,3 +23,6 @@ RSTN: 12
 
 That is all!!  
 Made with <3 by Keyaan  
+
+# Licensing
+Licensed under MIT License. 
