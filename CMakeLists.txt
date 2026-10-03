@@ -23,7 +23,7 @@ if (EXISTS ${picoVscode})
     include(${picoVscode})
 endif()
 # ====================================================================================
-set(PICO_BOARD pico2 CACHE STRING "Board type")
+set(PICO_BOARD pico_w CACHE STRING "Board type")
 
 # Pull in Raspberry Pi Pico SDK (must be before project)
 include(pico_sdk_import.cmake)
@@ -61,6 +61,7 @@ target_include_directories(spindle-firmware PRIVATE
 target_link_libraries(spindle-firmware 
         hardware_spi
         FatFs_SPI
+        pico_cyw43_arch_lwip_threadsafe_background
         )
 
 pico_add_extra_outputs(spindle-firmware)

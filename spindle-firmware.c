@@ -5,9 +5,13 @@
 #include "eink-driver.h"
 #include "ff.h"
 #include "font8x8_basic.h"
+#include "pico/cyw43_arch.h"
+#include "lwip/dns.h"
+#include "lwip/tcp.h"
+#include "lwip/pbuf.h"
 
 
-// We are going to use SPI 0, and allocate it to the following GPIO pins
+//// We are going to use SPI 0, and allocate it to the following GPIO pins
 #define SPI_PORT spi1
 #define PIN_UP 0
 #define PIN_DOWN 0
@@ -15,10 +19,11 @@
 #define PIN_LEFT 0
 #define PIN_CENTER 0
 #define MAX_PAGES 500
+// #define CYW43_AUTH_WPA2_MIXED_PSK (0x00400006)
 
 #define MAX_FILENAME_LENGTH 32
 #define MAX_FILES 16
-char file_list[MAX_FILENAME_LENGTH][MAX_FILES];
+char file_list[MAX_FILES][MAX_FILENAME_LENGTH];
 int total_files = 0;
 int selected_file = 0;
 int ui_state = 0;
@@ -28,11 +33,16 @@ int next_off = 0;
 UINT page_history[MAX_PAGES];
 int current_page = 0;
 
+const char ssid[] = "SSID";
+const char pwd[] = "PASSWORD";
+
 
 FILINFO fno;
 FRESULT read;
 FATFS fs;
 DIR open_dir;
+
+FIL downloadded_file;
 
 void scan_directory(char* path){
     FRESULT opened_directory = f_opendir(&open_dir, path);
@@ -114,6 +124,55 @@ void read_book(char* filename){
 }
 
 
+err_t http_receive_callback(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err){
+    if (p==NULL){
+        f_close(&downloadded_file);
+        tcp_close(tpcb);
+        scan_directory("0:");
+        ui_state = 0;
+        draw_menu();
+        return ERR_OK;
+    }
+
+    UINT bytes_written;
+    ui_state = 0;
+    draw_menu();
+
+    tcp_recved(tpcb, p->tot_len);
+    pbuf_free(p);
+    return ERR_OK;
+}
+
+
+err_t http_connected_callback(void *arg, struct tcp_pcb *tpcb, err_t err){
+    if (err != ERR_OK) {
+        return err;
+    }
+
+    f_open(&downloadded_file, "download.txt", FA_WRITE | FA_CREATE_ALWAYS);
+
+    char request [] = "GET /book.txt HTTP/1.1\nHost: spindle.keyaan.me\nUser-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64)\nConnection: close";
+    tcp_write(tpcb, request, strlen(request), TCP_WRITE_FLAG_COPY);
+    tcp_output(tpcb);
+
+    tcp_recv(tpcb, http_receive_callback);
+    return ERR_OK;
+}
+
+void dns_found_callback(const char name[], const ip_addr_t *ipaddr, void *callback_arg){
+    if (ipaddr){
+        struct tcp_pcb *pcb = tcp_new();
+        tcp_connect(pcb, ipaddr, 80, http_connected_callback);
+    }
+    else {
+        eink_clear();
+        eink_write_data_and_display();
+        sleep_ms(2000);
+        ui_state = 0;
+        draw_menu();
+    }
+}
+
 
 int main()
 {
@@ -129,17 +188,28 @@ int main()
     gpio_set_dir(PIN_UP, GPIO_IN);
     gpio_set_dir(PIN_CENTER, GPIO_IN);
 
-
+    cyw43_arch_init();
+    cyw43_arch_enable_sta_mode();
     stdio_init_all();
     eink_init();
     eink_clear();
     eink_write_data_and_display();
+    int conn_status = cyw43_arch_wifi_connect_timeout_ms(ssid, pwd, CYW43_AUTH_WPA2_MIXED_PSK, 10000);
+
+    if (conn_status == 0){
+        eink_write_string(10, 10, "WiFi Connected", 1);
+    }
+    else {
+        eink_write_string(10, 10, "Wifi Connection failed", 1);
+    }
+    eink_write_data_and_display();
+    sleep_ms(1000);
 
     f_mount(&fs, "0:", 1);
     scan_directory("0:");
 
     draw_menu();
-
+    
     while(1){
         if(ui_state == 0){
             if(gpio_get(PIN_CENTER)==0){
@@ -195,6 +265,8 @@ int main()
                 }
                 sleep_ms(100);
             }
+        }
+        else if (ui_state == 2){
         }
         sleep_ms(10);
     }
