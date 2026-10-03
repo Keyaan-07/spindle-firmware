@@ -35,6 +35,7 @@ int current_page = 0;
 
 const char ssid[] = "SSID";
 const char pwd[] = "PASSWORD";
+ip_addr_t server_ip;
 
 
 FILINFO fno;
@@ -194,13 +195,15 @@ int main()
     eink_init();
     eink_clear();
     eink_write_data_and_display();
+    eink_write_string(10, 10 , "Connecting to WiFi", 1);
+    eink_write_data_and_display();
     int conn_status = cyw43_arch_wifi_connect_timeout_ms(ssid, pwd, CYW43_AUTH_WPA2_MIXED_PSK, 10000);
 
     if (conn_status == 0){
-        eink_write_string(10, 10, "WiFi Connected", 1);
+        eink_write_string(10, 20, "WiFi Connected", 1);
     }
     else {
-        eink_write_string(10, 10, "Wifi Connection failed", 1);
+        eink_write_string(10, 30, "Wifi Connection failed", 1);
     }
     eink_write_data_and_display();
     sleep_ms(1000);
@@ -209,10 +212,10 @@ int main()
     scan_directory("0:");
 
     draw_menu();
-    
+    eink_write_data_and_display();
     while(1){
         if(ui_state == 0){
-            if(gpio_get(PIN_CENTER)==0){
+            if(gpio_get(PIN_RIGHT)==0){
                 current_off = 0;
                 page_history[0] = 0;
                 current_page = 0;
@@ -222,6 +225,21 @@ int main()
                 sleep_ms(200);
             
             }
+
+
+            if (gpio_get(PIN_CENTER)){
+                ui_state = 2;
+                eink_clear();
+                eink_write_string(10, 10 , "Downloading data", 1);
+                eink_write_data_and_display();
+
+                err_t err = dns_gethostbyname("spindle.keyaan.me", &server_ip, dns_found_callback, NULL);
+
+                if (err == ERR_OK){
+                    dns_found_callback("spindle.keyaan.me", &server_ip, NULL);
+                }
+            }
+
 
             if(gpio_get(PIN_DOWN) == 0){
                 if (selected_file < (total_files-1)){
@@ -266,8 +284,7 @@ int main()
                 sleep_ms(100);
             }
         }
-        else if (ui_state == 2){
-        }
+
         sleep_ms(10);
     }
 }
