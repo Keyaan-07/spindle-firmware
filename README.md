@@ -19,10 +19,13 @@ BUSY: 13
 D/C#: 8  
 RSTN: 12  
 
+
+New additions for firmware include Wi-Fi Compatibility, tho it may be buggy.  ui_state = 2 means it is in download mode where it will download everything from keyaan.spindle.me(the go api backend is in [/book-api](https://github.com/Keyaan-07/spindle-firmware/tree/main/book-api))  
+
 -------------
 
 That is all!!  
 Made with <3 by Keyaan  
 
 # Licensing
-Licensed under MIT License. 
+Licensed under MIT License.  
